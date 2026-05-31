@@ -6,7 +6,7 @@
 
 **A pocket Linux IDE for Android — terminal, code editor, and a real toolchain. Root optional.**
 
-[![Android CI](https://github.com/REPLACE_OWNER/LowLevelIDE/actions/workflows/android.yml/badge.svg)](https://github.com/REPLACE_OWNER/LowLevelIDE/actions/workflows/android.yml)
+[![Android CI](https://github.com/scartheseller72-max/LowLevelIDE/actions/workflows/android.yml/badge.svg)](https://github.com/scartheseller72-max/LowLevelIDE/actions/workflows/android.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-Android-3ddc84)
 ![Min SDK](https://img.shields.io/badge/minSdk-24-orange)
@@ -79,7 +79,7 @@ util/CrashHandler        global uncaught-exception capture → <filesDir>/crash/
 ## Build
 
 ```bash
-git clone https://github.com/REPLACE_OWNER/LowLevelIDE.git
+git clone https://github.com/scartheseller72-max/LowLevelIDE.git
 cd LowLevelIDE
 cp local.properties.example local.properties   # then point sdk.dir at your Android SDK
 ./gradlew :app:assembleDebug
