@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- Tab strip + actions -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorPrimary"
+        android:orientation="horizontal">
+
+        <HorizontalScrollView
+            android:id="@+id/editorTabsScroll"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:scrollbars="none"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:id="@+id/editorTabsContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
+
+        <ImageButton
+            android:id="@+id/btnNewFile"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_add"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/action_new_file" />
+
+        <ImageButton
+            android:id="@+id/btnSave"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_save"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/action_save" />
+
+        <ImageButton
+            android:id="@+id/btnRun"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_run"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/action_run" />
+
+        <ImageButton
+            android:id="@+id/btnFind"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_search"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/action_find" />
+    </LinearLayout>
+
+    <!-- WebView host -->
+    <WebView
+        android:id="@+id/webviewEditor"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+</LinearLayout>

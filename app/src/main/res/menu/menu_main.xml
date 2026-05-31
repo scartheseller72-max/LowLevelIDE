@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_save"
+        android:title="@string/action_save"
+        android:icon="@drawable/ic_save"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_run"
+        android:title="@string/action_run"
+        android:icon="@drawable/ic_run"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_overflow"
+        android:title="@string/action_find"
+        android:icon="@drawable/ic_more"
+        app:showAsAction="always">
+        <menu>
+            <item
+                android:id="@+id/action_find"
+                android:title="@string/action_find" />
+            <item
+                android:id="@+id/action_save_all"
+                android:title="@string/action_save_all" />
+            <item
+                android:id="@+id/action_settings"
+                android:title="@string/title_settings" />
+            <item
+                android:id="@+id/action_about"
+                android:title="@string/title_about" />
+        </menu>
+    </item>
+</menu>

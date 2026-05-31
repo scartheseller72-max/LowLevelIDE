@@ -1,0 +1,25 @@
+*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+app/build/
+app/release/
+*.apk
+*.aab
+*.hprof
+
+# Optional offline assets (auto-downloaded at runtime, but bundle if you want)
+app/src/main/assets/bootstrap/*.tar.gz
+app/src/main/assets/bootstrap/*.tar.xz
+app/src/main/assets/bootstrap/proot-*
+app/src/main/assets/editor/codemirror.js
+app/src/main/assets/editor/codemirror.css
+app/src/main/assets/editor/theme/
+app/src/main/assets/editor/mode/
+app/src/main/assets/editor/addon/

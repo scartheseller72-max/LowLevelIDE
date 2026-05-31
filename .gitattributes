@@ -1,0 +1,16 @@
+* text=auto eol=lf
+*.bat text eol=crlf
+gradlew text eol=lf
+
+# Binaries
+*.jar binary
+*.png binary
+*.apk binary
+*.aab binary
+*.7z binary
+*.zip binary
+
+# Keep generated/vendored assets out of language stats
+docs/** linguist-documentation
+art/** linguist-documentation
+gradle/wrapper/gradle-wrapper.jar linguist-vendored

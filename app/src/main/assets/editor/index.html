@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Editor</title>
+    <link rel="stylesheet" href="/cm/codemirror.css">
+    <link rel="stylesheet" href="/cm/theme/material-darker.css">
+    <link rel="stylesheet" href="/cm/theme/dracula.css">
+    <link rel="stylesheet" href="/cm/theme/monokai.css">
+    <link rel="stylesheet" href="/cm/theme/ayu-dark.css">
+    <link rel="stylesheet" href="/cm/theme/eclipse.css">
+    <link rel="stylesheet" href="/cm/theme/idea.css">
+    <link rel="stylesheet" href="/cm/addon/dialog/dialog.css">
+    <link rel="stylesheet" href="/cm/addon/search/matchesonscrollbar.css">
+    <link rel="stylesheet" href="editor.css">
+</head>
+<body>
+    <div id="editor-host"></div>
+    <div id="status-bar">
+        <span id="status-mode">text</span>
+        <span id="status-cursor">1:1</span>
+        <span id="status-encoding">UTF-8</span>
+    </div>
+
+    <script src="/cm/codemirror.js"></script>
+    <script src="/cm/addon/edit/matchbrackets.js"></script>
+    <script src="/cm/addon/edit/closebrackets.js"></script>
+    <script src="/cm/addon/dialog/dialog.js"></script>
+    <script src="/cm/addon/search/searchcursor.js"></script>
+    <script src="/cm/addon/search/search.js"></script>
+    <script src="/cm/addon/search/jump-to-line.js"></script>
+    <script src="/cm/addon/scroll/annotatescrollbar.js"></script>
+    <script src="/cm/addon/search/matchesonscrollbar.js"></script>
+    <script src="/cm/addon/selection/active-line.js"></script>
+    <script src="/cm/mode/clike/clike.js"></script>
+    <script src="/cm/mode/python/python.js"></script>
+    <script src="/cm/mode/javascript/javascript.js"></script>
+    <script src="/cm/mode/shell/shell.js"></script>
+    <script src="/cm/mode/rust/rust.js"></script>
+    <script src="/cm/mode/go/go.js"></script>
+    <script src="/cm/mode/xml/xml.js"></script>
+    <script src="/cm/mode/css/css.js"></script>
+    <script src="/cm/mode/htmlmixed/htmlmixed.js"></script>
+    <script src="/cm/mode/markdown/markdown.js"></script>
+    <script src="/cm/mode/yaml/yaml.js"></script>
+    <script src="/cm/mode/sql/sql.js"></script>
+    <script src="editor.js"></script>
+</body>
+</html>

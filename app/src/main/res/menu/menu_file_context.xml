@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/ctx_open" android:title="@string/file_open_in_editor" />
+    <item android:id="@+id/ctx_run"  android:title="@string/file_run_in_terminal" />
+    <item android:id="@+id/ctx_rename" android:title="@string/file_rename" />
+    <item android:id="@+id/ctx_delete" android:title="@string/file_delete" />
+    <item android:id="@+id/ctx_copy_path" android:title="@string/file_copy_path" />
+</menu>

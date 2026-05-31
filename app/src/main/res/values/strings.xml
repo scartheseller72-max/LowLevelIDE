@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LowLevelIDE</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title">Welcome</string>
+    <string name="onboarding_welcome_title">A pocket Linux IDE</string>
+    <string name="onboarding_welcome_body">A terminal, a code editor, and a real Linux toolchain — all in your pocket. No root required.</string>
+    <string name="onboarding_downloads_title">First-run setup</string>
+    <string name="onboarding_downloads_body">We\'ll fetch a minimal Alpine Linux rootfs (~3 MB), the PRoot binary (~1.5 MB), and the CodeMirror editor (~500 KB). One-time only.</string>
+    <string name="onboarding_finish_title">Ready to code</string>
+    <string name="onboarding_finish_body">Open the editor on top, run commands below. Use <b>apk add</b> inside the terminal to install gcc, python, git, and more.</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_back">Back</string>
+    <string name="onboarding_start">Start setup</string>
+    <string name="onboarding_skip">Skip (offline mode)</string>
+    <string name="onboarding_finish">Open IDE</string>
+    <string name="onboarding_progress_init">Preparing…</string>
+    <string name="onboarding_progress_alpine">Downloading Alpine rootfs…</string>
+    <string name="onboarding_progress_proot">Downloading PRoot…</string>
+    <string name="onboarding_progress_codemirror">Downloading editor assets…</string>
+    <string name="onboarding_progress_done">All set.</string>
+    <string name="onboarding_progress_failed">Download failed: %1$s</string>
+    <string name="onboarding_retry">Retry</string>
+
+    <!-- Main shell -->
+    <string name="title_editor">Editor</string>
+    <string name="title_terminal">Terminal</string>
+    <string name="title_files">Files</string>
+    <string name="title_settings">Settings</string>
+    <string name="title_about">About</string>
+    <string name="action_new_terminal">New terminal</string>
+    <string name="action_new_file">New file</string>
+    <string name="action_save">Save</string>
+    <string name="action_save_all">Save all</string>
+    <string name="action_run">Build &amp; run</string>
+    <string name="action_find">Find</string>
+    <string name="action_replace">Replace</string>
+    <string name="action_close_tab">Close tab</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="badge_root">ROOT</string>
+    <string name="badge_user">USER</string>
+    <string name="badge_proot">PROOT</string>
+    <string name="badge_loading">…</string>
+
+    <!-- File browser -->
+    <string name="file_create_folder">New folder</string>
+    <string name="file_create_file">New file</string>
+    <string name="file_rename">Rename</string>
+    <string name="file_delete">Delete</string>
+    <string name="file_open_in_editor">Open in editor</string>
+    <string name="file_run_in_terminal">Run in terminal</string>
+    <string name="file_copy_path">Copy path</string>
+    <string name="file_empty_dir">(empty)</string>
+    <string name="file_confirm_delete">Delete %1$s?</string>
+    <string name="file_enter_name">Name</string>
+    <string name="file_import">Import file</string>
+    <string name="file_imported">Imported %1$s</string>
+    <string name="file_import_failed">Import failed</string>
+    <string name="git_menu">Git actions</string>
+    <string name="git_commit_title">Commit</string>
+    <string name="git_commit_hint">Commit message</string>
+    <string name="git_no_terminal">Open the terminal pane first</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- Settings -->
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">Follow system</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_font_size">Editor font size</string>
+    <string name="settings_editor_theme">Editor colour scheme</string>
+    <string name="settings_word_wrap">Soft-wrap long lines</string>
+    <string name="settings_terminal">Terminal</string>
+    <string name="settings_terminal_font_size">Terminal font size</string>
+    <string name="settings_terminal_palette">Terminal palette</string>
+    <string name="settings_extra_keys">Show extra keys row</string>
+    <string name="settings_use_root">Prefer root shell when available</string>
+    <string name="settings_use_proot">Use PRoot chroot when unrooted</string>
+    <string name="settings_persistent_terminal">Keep terminals running in background</string>
+    <string name="settings_developer">Developer</string>
+    <string name="settings_reinstall_bootstrap">Reinstall Linux rootfs</string>
+    <string name="settings_clear_data">Clear app data (rootfs + tabs)</string>
+    <string name="settings_crash_logs">Crash reports</string>
+    <string name="settings_view_crash">View / share latest crash report</string>
+    <string name="settings_clear_crash">Clear crash reports</string>
+    <string name="settings_no_crash">No crash reports — all good.</string>
+    <string name="crash_share_subject">LowLevelIDE crash report</string>
+    <string name="crash_dialog_title">Latest crash report</string>
+    <string name="crash_share">Share</string>
+    <string name="crash_cleared">Crash reports cleared</string>
+
+    <!-- About -->
+    <string name="about_blurb">LowLevelIDE bundles a Termux-style terminal emulator and a CodeMirror editor on top of a sandboxed Alpine Linux. Built for tinkerers who want a real Linux toolchain on Android — root or no root.</string>
+    <string name="about_version">Version</string>
+    <string name="about_built_on">Built on</string>
+    <string name="about_open_source">Open-source components</string>
+    <string name="about_termux">Termux terminal-view / terminal-emulator (GPLv3)</string>
+    <string name="about_codemirror">CodeMirror 5 (MIT)</string>
+    <string name="about_alpine">Alpine Linux minirootfs (various FOSS)</string>
+    <string name="about_proot">PRoot (GPLv2)</string>
+
+    <!-- Errors -->
+    <string name="error_no_network">No network connection. Connect to download the rootfs, or skip into offline mode.</string>
+    <string name="error_bootstrap_missing">Linux rootfs missing. Reinstall from Settings.</string>
+    <string name="error_terminal_failed">Terminal session failed.</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_name">Background terminals</string>
+    <string name="notification_channel_desc">Keeps your terminal sessions alive while the app is in the background.</string>
+    <string name="notification_running">LowLevelIDE — %1$d session(s) active</string>
+    <string name="notification_action_stop">Stop all</string>
+</resources>

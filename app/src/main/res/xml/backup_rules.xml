@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Don't back up the bootstrap directory; it's large and reinstallable. -->
+    <exclude domain="file" path="bootstrap/" />
+    <exclude domain="file" path="tmp/" />
+    <include domain="file" path="home/" />
+</full-backup-content>

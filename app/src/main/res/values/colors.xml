@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand: teal/emerald accent on graphite, matching the app mark -->
+    <color name="brand_teal">#0FB5A0</color>
+    <color name="brand_emerald">#16C784</color>
+    <color name="brand_amber">#F5A524</color>
+    <color name="brand_graphite">#0F141C</color>
+
+    <!-- Material 3 light scheme (teal seed) -->
+    <color name="seed">#0FB5A0</color>
+    <color name="md_primary">#006A60</color>
+    <color name="md_on_primary">#FFFFFF</color>
+    <color name="md_primary_container">#74F8E5</color>
+    <color name="md_on_primary_container">#00201C</color>
+    <color name="md_secondary">#4A635F</color>
+    <color name="md_on_secondary">#FFFFFF</color>
+    <color name="md_background">#FAFDFB</color>
+    <color name="md_on_background">#191C1B</color>
+    <color name="md_surface">#FAFDFB</color>
+    <color name="md_on_surface">#191C1B</color>
+    <color name="md_surface_variant">#DAE5E1</color>
+    <color name="md_on_surface_variant">#3F4946</color>
+    <color name="md_outline">#6F7976</color>
+
+    <color name="header_editor">#0FB5A0</color>
+    <color name="header_terminal">#263238</color>
+    <color name="header_files">#006A60</color>
+    <color name="splitter">#9E9E9E</color>
+    <color name="extra_keys_bg">#161D28</color>
+    <color name="extra_keys_text">#ECEFF1</color>
+    <color name="badge_root">#D32F2F</color>
+    <color name="badge_user">#16C784</color>
+    <color name="badge_proot">#F5A524</color>
+
+    <color name="terminal_bg">#0D1117</color>
+    <color name="terminal_fg">#E6EDF3</color>
+</resources>
