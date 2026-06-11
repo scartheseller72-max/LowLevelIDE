@@ -20,35 +20,48 @@ class TerminalSessionManager(private val context: Context) {
     private val _activeIndex = MutableStateFlow(-1)
     val activeIndex: StateFlow<Int> = _activeIndex.asStateFlow()
 
+    // The session list is mutated from both the UI thread (tab actions) and the PtyService
+    // thread (onStartCommand/onDestroy). Guard every read-modify-write so a concurrent
+    // newSession/finishAll can't lose a session and leak its PTY fd / child process.
+    private val lock = Any()
+
     fun newSession(
         client: TerminalSessionClient,
         options: TerminalSessionProvider.Options = TerminalSessionProvider.Options()
     ): TerminalSession {
         val session = provider.createSession(client, options)
-        _sessions.value = _sessions.value + session
-        _activeIndex.value = _sessions.value.size - 1
+        synchronized(lock) {
+            _sessions.value = _sessions.value + session
+            _activeIndex.value = _sessions.value.size - 1
+        }
         return session
     }
 
     fun closeSession(index: Int) {
-        val list = _sessions.value.toMutableList()
-        if (index !in list.indices) return
-        runCatching { list[index].finishIfRunning() }
-        list.removeAt(index)
-        _sessions.value = list
-        _activeIndex.value = (index - 1).coerceAtLeast(if (list.isEmpty()) -1 else 0)
+        synchronized(lock) {
+            val list = _sessions.value.toMutableList()
+            if (index !in list.indices) return
+            runCatching { list[index].finishIfRunning() }
+            list.removeAt(index)
+            _sessions.value = list
+            _activeIndex.value = (index - 1).coerceAtLeast(if (list.isEmpty()) -1 else 0)
+        }
     }
 
     fun setActive(index: Int) {
-        if (index in _sessions.value.indices) _activeIndex.value = index
+        synchronized(lock) {
+            if (index in _sessions.value.indices) _activeIndex.value = index
+        }
     }
 
     fun activeSession(): TerminalSession? =
         _sessions.value.getOrNull(_activeIndex.value)
 
     fun finishAll() {
-        _sessions.value.forEach { runCatching { it.finishIfRunning() } }
-        _sessions.value = emptyList()
-        _activeIndex.value = -1
+        synchronized(lock) {
+            _sessions.value.forEach { runCatching { it.finishIfRunning() } }
+            _sessions.value = emptyList()
+            _activeIndex.value = -1
+        }
     }
 }

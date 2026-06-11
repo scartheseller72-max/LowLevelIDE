@@ -157,7 +157,10 @@ class FileBrowserFragment : Fragment() {
         val activity = requireActivity()
         val term = activity.supportFragmentManager.findFragmentById(com.example.lowlevelide.R.id.terminalContainer)
             as? com.example.lowlevelide.ui.terminal.TerminalFragment
-        term?.sendToActiveSession("./\"$rel\"\n")
+        // Single-quote the path: a filename with $(...), backticks, or spaces must not be
+        // interpreted by the shell (double quotes would still expand $ and `).
+        val quoted = "'" + rel.replace("'", "'\\''") + "'"
+        term?.sendToActiveSession("./$quoted\n")
     }
 
     private fun renameDialog(file: File) {

@@ -44,7 +44,10 @@ class EditorFragment : Fragment() {
             allowFileAccess = true
             domStorageEnabled = true
             allowUniversalAccessFromFileURLs = false
-            allowFileAccessFromFileURLs = true
+            // Don't let scripts on a file:// page issue local-file XHR; the Java bridge below
+            // is reachable from page scripts, so keep the file:// origin as locked down as
+            // possible. Editor assets are served through shouldInterceptRequest instead.
+            allowFileAccessFromFileURLs = false
         }
         webView.webChromeClient = object : WebChromeClient() {
             override fun onConsoleMessage(message: android.webkit.ConsoleMessage): Boolean {
@@ -59,8 +62,13 @@ class EditorFragment : Fragment() {
                 if (!url.contains("/cm/")) return null
                 val rel = url.substringAfter("/cm/")
                 val installer = CodeMirrorInstaller(requireContext())
-                val file = File(installer.editorDir(), rel)
-                if (!file.exists()) return null
+                val editorDir = installer.editorDir().canonicalFile
+                val file = File(editorDir, rel).canonicalFile
+                // Confine to the editor asset dir so a crafted `cm/../...` URL can't read
+                // arbitrary files through the interceptor.
+                val inside = file.path == editorDir.path ||
+                    file.path.startsWith(editorDir.path + File.separator)
+                if (!inside || !file.exists()) return null
                 val mime = when (file.extension.lowercase()) {
                     "js" -> "text/javascript"
                     "css" -> "text/css"
@@ -135,21 +143,30 @@ class EditorFragment : Fragment() {
         }
     }
 
+    /** Single-quote a path for safe shell interpolation, escaping embedded single quotes. */
+    private fun sh(s: String): String =
+        if (s.isEmpty()) "''" else "'" + s.replace("'", "'\\''") + "'"
+
     private fun inferRunCommand(rel: String): String? {
+        // $HOME stays an unquoted shell variable; every file-derived value is single-quoted so a
+        // filename containing shell metacharacters can't inject commands into the user's session.
         val home = "\$HOME"
         val name = rel.substringAfterLast('/')
         return when {
-            name.endsWith(".c") -> "cd $home && gcc \"$rel\" -o ${name.removeSuffix(".c")} && ./${name.removeSuffix(".c")}"
+            name.endsWith(".c") -> {
+                val base = name.removeSuffix(".c")
+                "cd $home && gcc ${sh(rel)} -o ${sh(base)} && ${sh("./$base")}"
+            }
             name.endsWith(".cpp") || name.endsWith(".cc") -> {
                 val base = name.substringBeforeLast('.')
-                "cd $home && g++ \"$rel\" -o $base && ./$base"
+                "cd $home && g++ ${sh(rel)} -o ${sh(base)} && ${sh("./$base")}"
             }
-            name.endsWith(".py") -> "cd $home && python3 \"$rel\""
-            name.endsWith(".sh") -> "cd $home && sh \"$rel\""
-            name.endsWith(".js") -> "cd $home && node \"$rel\""
+            name.endsWith(".py") -> "cd $home && python3 ${sh(rel)}"
+            name.endsWith(".sh") -> "cd $home && sh ${sh(rel)}"
+            name.endsWith(".js") -> "cd $home && node ${sh(rel)}"
             name.endsWith(".rs") -> {
                 val base = name.removeSuffix(".rs")
-                "cd $home && rustc \"$rel\" -o $base && ./$base"
+                "cd $home && rustc ${sh(rel)} -o ${sh(base)} && ${sh("./$base")}"
             }
             else -> null
         }

@@ -18,7 +18,11 @@ class FileRepository(private val context: Context) {
     /** Resolve a relative path against home root, rejecting escapes. */
     fun resolve(relative: String): File? {
         val candidate = File(homeRoot, relative).canonicalFile
-        return if (candidate.path.startsWith(homeRoot.canonicalPath)) candidate else null
+        val rootPath = homeRoot.canonicalPath
+        // Require the root itself or a path strictly under it, separator-aware so a sibling
+        // like ".../home-evil" can't pass a bare prefix check.
+        val ok = candidate.path == rootPath || candidate.path.startsWith(rootPath + File.separator)
+        return if (ok) candidate else null
     }
 
     fun list(dir: File): List<File> = dir.listFiles()

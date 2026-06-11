@@ -72,20 +72,26 @@ object BootstrapInstaller {
 
     @Throws(IOException::class)
     private fun extractTarGz(input: InputStream, dest: File) {
+        val destCanonical = dest.canonicalFile
         GZIPInputStream(input).use { gzip ->
             TarArchiveInputStream(gzip).use { tar ->
                 var entry: TarArchiveEntry? = tar.nextTarEntry
                 while (entry != null) {
                     val outFile = File(dest, entry.name)
-                    if (!outFile.canonicalPath.startsWith(dest.canonicalPath)) {
+                    if (!isInside(destCanonical, outFile)) {
                         throw IOException("Tar entry escapes destination: ${entry.name}")
                     }
 
                     when {
                         entry.isDirectory -> outFile.mkdirs()
-                        entry.isSymbolicLink -> writeSymlink(entry.linkName.orEmpty(), outFile)
+                        entry.isSymbolicLink -> writeSymlink(entry.linkName.orEmpty(), outFile, destCanonical)
                         else -> {
                             outFile.parentFile?.mkdirs()
+                            // Re-validate after parent dirs exist: a previously-extracted symlink
+                            // could otherwise redirect this write outside `dest`.
+                            if (!isInside(destCanonical, outFile)) {
+                                throw IOException("Tar entry resolves outside destination: ${entry.name}")
+                            }
                             FileOutputStream(outFile).use { tar.copyTo(it) }
                             applyMode(outFile, entry.mode)
                         }
@@ -96,9 +102,28 @@ object BootstrapInstaller {
         }
     }
 
-    /** Best-effort: real symlink via /system/bin/ln, else a regular file containing the target. */
-    private fun writeSymlink(target: String, outFile: File) {
+    /** True when [child] canonically resolves to [root] itself or a path strictly under it. */
+    private fun isInside(root: File, child: File): Boolean {
+        val rootPath = root.canonicalPath
+        val childPath = child.canonicalFile.path
+        return childPath == rootPath || childPath.startsWith(rootPath + File.separator)
+    }
+
+    /**
+     * Best-effort symlink. The link **target** is attacker-controlled (the rootfs is fetched
+     * over the network), so we only create a real symlink when the resolved target stays inside
+     * [dest]; otherwise we fall back to writing the target string as a plain file, which can't
+     * redirect later writes out of the sandbox.
+     */
+    private fun writeSymlink(target: String, outFile: File, dest: File) {
         outFile.parentFile?.mkdirs()
+        val resolvedTarget = if (target.startsWith("/")) File(target) else File(outFile.parentFile, target)
+        val safeTarget = runCatching { isInside(dest, resolvedTarget) }.getOrDefault(false)
+        if (!safeTarget) {
+            // Don't materialize an escaping link; record the intended target inertly.
+            outFile.writeText(target)
+            return
+        }
         val tryRealLink = runCatching {
             Runtime.getRuntime().exec(
                 arrayOf("/system/bin/ln", "-sf", target, outFile.absolutePath)
@@ -108,12 +133,13 @@ object BootstrapInstaller {
     }
 
     private fun applyMode(file: File, mode: Int) {
-        // POSIX mode bits → Java's coarse setReadable/Writable/Executable
-        if ((mode and 0b001_000_000) != 0) file.setExecutable(true, false)
-        if ((mode and 0b010_000_000) != 0) file.setWritable(true, false)
-        if ((mode and 0b100_000_000) != 0) file.setReadable(true, false)
+        // POSIX owner mode bits → Java's coarse setReadable/Writable/Executable.
+        // ownerOnly=true: never widen extracted rootfs files to world access.
+        if ((mode and 0b001_000_000) != 0) file.setExecutable(true, true)
+        if ((mode and 0b010_000_000) != 0) file.setWritable(true, true)
+        if ((mode and 0b100_000_000) != 0) file.setReadable(true, true)
         // Anything inside */bin or */sbin should be runnable regardless of header.
         val parent = file.parentFile?.name.orEmpty()
-        if (parent == "bin" || parent == "sbin") file.setExecutable(true, false)
+        if (parent == "bin" || parent == "sbin") file.setExecutable(true, true)
     }
 }
