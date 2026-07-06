@@ -113,6 +113,11 @@ class EditorFragment : Fragment() {
     private fun jsString(s: String): String =
         "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
+    /** Open (or focus) a home-relative file in the editor. Called by the file browser. */
+    fun openFile(relative: String) {
+        _binding?.webviewEditor?.evaluateJavascript("openFile(${jsString(relative)});", null)
+    }
+
     fun saveActive() {
         binding.webviewEditor.evaluateJavascript("saveActive();", null)
     }

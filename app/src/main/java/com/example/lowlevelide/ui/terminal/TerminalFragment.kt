@@ -12,14 +12,17 @@ import com.example.lowlevelide.databinding.FragmentTerminalBinding
 import com.example.lowlevelide.databinding.ItemTabBinding
 import com.example.lowlevelide.terminal.PtyService
 import com.example.lowlevelide.terminal.TerminalPalette
+import com.example.lowlevelide.system.RootDetect
 import com.example.lowlevelide.terminal.TerminalSessionManager
 import com.example.lowlevelide.terminal.TerminalSessionProvider
 import com.example.lowlevelide.util.Logger
 import com.termux.terminal.TerminalSession
 import com.termux.terminal.TerminalSessionClient
 import com.termux.view.TerminalViewClient
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Hosts the [com.termux.view.TerminalView] plus a tab strip and the [ExtraKeysView]
@@ -37,24 +40,37 @@ class TerminalFragment : Fragment() {
         get() = boundService?.sessionManager ?: localManager
             ?: throw IllegalStateException("No session manager")
 
+    // Mirror of the user's shell preferences (Settings). Loaded before the first session is
+    // created so new terminals actually honour the "Prefer root" / "Use PRoot" toggles instead
+    // of always forcing both on. Defaults match the previous hard-coded behaviour.
+    private var preferRoot: Boolean = true
+    private var preferProot: Boolean = true
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, state: Bundle?): View {
         _binding = FragmentTerminalBinding.inflate(inflater, container, false)
         binding.btnNewSession.setOnClickListener { newSession() }
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            val showExtra = (requireActivity().applicationContext as App)
-                .settings.extraKeysFlow.first()
-            binding.extraKeysView.visibility = if (showExtra) View.VISIBLE else View.GONE
-            binding.extraKeysView.attach { text -> sendToActiveSession(text) }
-        }
 
         // If the host activity already bound to PtyService, it'll call attachService().
         // Otherwise create a local-only manager so the fragment is self-sufficient.
         if (boundService == null && localManager == null) {
             localManager = TerminalSessionManager(requireContext())
         }
-        ensureAtLeastOneSession()
-        rebuildTabs()
+
+        // Load preferences and create the first session inside the coroutine so we can (a) honour
+        // the persisted root/proot toggles and (b) warm the root-detection cache off the main
+        // thread — RootDetect may exec `su` and block for seconds, which would ANR if the first
+        // session were created synchronously on the UI thread.
+        viewLifecycleOwner.lifecycleScope.launch {
+            val settings = (requireActivity().applicationContext as App).settings
+            binding.extraKeysView.visibility = if (settings.extraKeysFlow.first()) View.VISIBLE else View.GONE
+            binding.extraKeysView.attach { text -> sendToActiveSession(text) }
+            preferRoot = settings.useRootFlow.first()
+            preferProot = settings.useProotFlow.first()
+            withContext(Dispatchers.IO) { RootDetect.isRootAvailable() }
+            ensureAtLeastOneSession()
+            rebuildTabs()
+            bindActiveSession()
+        }
         return binding.root
     }
 
@@ -66,8 +82,7 @@ class TerminalFragment : Fragment() {
     }
 
     private fun newSession(): TerminalSession {
-        val app = requireActivity().applicationContext as App
-        val opts = TerminalSessionProvider.Options(preferRoot = true, preferProot = true)
+        val opts = TerminalSessionProvider.Options(preferRoot = preferRoot, preferProot = preferProot)
         val client = createSessionClient()
         val session = manager.newSession(client, opts)
         rebuildTabs()

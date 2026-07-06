@@ -129,11 +129,12 @@ class FileBrowserFragment : Fragment() {
 
     private fun openInEditor(file: File) {
         val rel = file.relativeTo(repo.homeRoot).path
-        val activity = requireActivity()
-        val editor = activity.supportFragmentManager.findFragmentById(com.example.lowlevelide.R.id.editorContainer)
+        val editor = requireActivity().supportFragmentManager
+            .findFragmentById(com.example.lowlevelide.R.id.editorContainer)
             as? com.example.lowlevelide.ui.editor.EditorFragment ?: return
-        editor.requireView().findViewById<android.webkit.WebView>(com.example.lowlevelide.R.id.webviewEditor)
-            ?.evaluateJavascript("openFile(${quote(rel)});", null)
+        // Delegate to the editor's own API instead of reaching into its WebView; the editor
+        // handles JS-escaping the path safely.
+        editor.openFile(rel)
     }
 
     private fun showContextMenu(file: File, anchor: View) {
@@ -191,8 +192,6 @@ class FileBrowserFragment : Fragment() {
         val mgr = requireContext().getSystemService(android.content.ClipboardManager::class.java)
         mgr?.setPrimaryClip(android.content.ClipData.newPlainText("path", file.absolutePath))
     }
-
-    private fun quote(s: String): String = "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
     override fun onDestroyView() { _binding = null; super.onDestroyView() }
 }

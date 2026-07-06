@@ -9,12 +9,16 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!--
+      Legacy external-storage read/write, bounded to the OS versions that still honour them.
+      File import uses the Storage Access Framework (ACTION_OPEN_DOCUMENT), which needs no
+      permission; the app's own data lives under filesDir. MANAGE_EXTERNAL_STORAGE ("All files
+      access") was removed: no code path uses it, and it triggers Play Store policy review.
+    -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
-        tools:ignore="ScopedStorage" />
 
     <application
         android:name=".App"

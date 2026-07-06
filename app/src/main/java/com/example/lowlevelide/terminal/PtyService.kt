@@ -37,7 +37,10 @@ class PtyService : Service() {
                 stopSelf()
             }
         }
-        return START_STICKY
+        // Terminal sessions are backed by live child processes that cannot survive a process
+        // kill, so resurrecting the service (START_STICKY, null intent) would only leave a stale
+        // "0 sessions active" foreground notification. Don't auto-restart.
+        return START_NOT_STICKY
     }
 
     fun refreshNotification() {

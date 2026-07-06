@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Application entry point. Wires up:
@@ -32,7 +33,10 @@ class App : Application() {
         CrashHandler.install(this)
         settings = AppSettings(this)
         applicationScope.launch {
-            applyTheme(settings.themeFlow.first())
+            // applicationScope runs on Dispatchers.Default; AppCompatDelegate night-mode must be
+            // applied on the main thread, so read the preference off-main then switch to Main.
+            val theme = settings.themeFlow.first()
+            withContext(Dispatchers.Main) { applyTheme(theme) }
         }
         createNotificationChannel()
     }

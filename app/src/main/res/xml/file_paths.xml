@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Only crash reports are shared out via FileProvider (Settings → share crash). The previous
+  entries exposed the entire filesDir (path="."), which needlessly widened the set of internal
+  files any grantee could read. Scope the provider to exactly what is shared.
+-->
 <paths>
     <files-path name="crash" path="crash/" />
-    <files-path name="editor" path="editor/" />
-    <files-path name="internal" path="." />
 </paths>

@@ -6,13 +6,11 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
-import android.view.GestureDetector
 import android.view.MotionEvent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.example.lowlevelide.bootstrap.BootstrapInstaller
 import com.example.lowlevelide.databinding.ActivityMainBinding
 import com.example.lowlevelide.system.RootDetect
 import com.example.lowlevelide.terminal.PtyService
@@ -23,8 +21,10 @@ import com.example.lowlevelide.ui.onboarding.OnboardingActivity
 import com.example.lowlevelide.ui.settings.SettingsFragment
 import com.example.lowlevelide.ui.terminal.TerminalFragment
 import com.example.lowlevelide.util.NotificationPermissionHelper
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * The main shell of the IDE. Hosts:
@@ -58,8 +58,14 @@ class MainActivity : AppCompatActivity() {
 
         val app = applicationContext as App
         lifecycleScope.launch {
+            // Redirect to onboarding only when the user hasn't completed it. We intentionally
+            // do NOT also require an installed bootstrap here: "Skip (offline mode)" marks the
+            // user onboarded without downloading a rootfs, and gating on isInstalled() would
+            // bounce those users back to onboarding forever. When the bootstrap is absent the
+            // terminal falls back to /system/bin/sh and the editor still opens, so the shell
+            // degrades gracefully instead of trapping the user.
             val onboarded = app.settings.onboardedFlow.first()
-            if (!onboarded || !BootstrapInstaller.isInstalled(this@MainActivity)) {
+            if (!onboarded) {
                 startActivity(Intent(this@MainActivity, OnboardingActivity::class.java))
                 finish()
                 return@launch
@@ -138,11 +144,15 @@ class MainActivity : AppCompatActivity() {
         supportFragmentManager.findFragmentById(R.id.editorContainer) as? EditorFragment
 
     private fun updateRootBadge() {
-        val isRoot = RootDetect.isRootAvailable()
-        binding.badgeRoot.text = getString(if (isRoot) R.string.badge_root else R.string.badge_user)
-        binding.badgeRoot.setBackgroundColor(
-            getColor(if (isRoot) R.color.badge_root else R.color.badge_user)
-        )
+        // RootDetect.isRootAvailable() may exec `su` and block for up to 5s; never do that on
+        // the UI thread (it would ANR). Detect on IO, then update the badge back on Main.
+        lifecycleScope.launch {
+            val isRoot = withContext(Dispatchers.IO) { RootDetect.isRootAvailable() }
+            binding.badgeRoot.text = getString(if (isRoot) R.string.badge_root else R.string.badge_user)
+            binding.badgeRoot.setBackgroundColor(
+                getColor(if (isRoot) R.color.badge_root else R.color.badge_user)
+            )
+        }
     }
 
     /**

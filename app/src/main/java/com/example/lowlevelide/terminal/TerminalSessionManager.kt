@@ -41,10 +41,21 @@ class TerminalSessionManager(private val context: Context) {
         synchronized(lock) {
             val list = _sessions.value.toMutableList()
             if (index !in list.indices) return
-            runCatching { list[index].finishIfRunning() }
+            // Remember which session was focused so closing a *different* tab doesn't yank
+            // focus away from it. Keying off the closed index (the old behaviour) moved the
+            // active tab whenever the user closed any tab above the active one.
+            val activeBefore = list.getOrNull(_activeIndex.value)
+            val closing = list[index]
+            runCatching { closing.finishIfRunning() }
             list.removeAt(index)
             _sessions.value = list
-            _activeIndex.value = (index - 1).coerceAtLeast(if (list.isEmpty()) -1 else 0)
+            _activeIndex.value = when {
+                list.isEmpty() -> -1
+                // A tab other than the active one was closed: keep the same session focused.
+                activeBefore != null && activeBefore !== closing -> list.indexOf(activeBefore)
+                // The active tab was closed: focus its neighbour (next, or the new last).
+                else -> index.coerceAtMost(list.lastIndex)
+            }
         }
     }
 

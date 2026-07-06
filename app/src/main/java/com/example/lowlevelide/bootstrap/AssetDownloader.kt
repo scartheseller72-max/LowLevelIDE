@@ -40,36 +40,43 @@ class AssetDownloader(
         onProgress(Progress.Start)
         dest.parentFile?.mkdirs()
 
-        val request = Request.Builder().url(url).build()
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                onProgress(Progress.Failed("HTTP ${response.code}"))
-                throw IOException("HTTP ${response.code} for $url")
-            }
-            val body = response.body ?: throw IOException("Empty body for $url")
-            val total = body.contentLength()
-            val source = body.source()
+        // Any failure (HTTP error, mid-stream network drop, checksum mismatch) must leave no
+        // partial file behind: callers use File.exists() to decide whether an asset is already
+        // installed, so a truncated download would otherwise masquerade as a valid one and
+        // silently break the editor/bootstrap on the next launch.
+        try {
+            val request = Request.Builder().url(url).build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw IOException("HTTP ${response.code} for $url")
+                }
+                val body = response.body ?: throw IOException("Empty body for $url")
+                val total = body.contentLength()
+                val source = body.source()
 
-            dest.sink().buffer().use { sink ->
-                val buf = ByteArray(64 * 1024)
-                var read = 0L
-                while (true) {
-                    val n = source.read(buf)
-                    if (n == -1) break
-                    sink.write(buf, 0, n)
-                    read += n
-                    onProgress(Progress.Bytes(read, total))
+                dest.sink().buffer().use { sink ->
+                    val buf = ByteArray(64 * 1024)
+                    var read = 0L
+                    while (true) {
+                        val n = source.read(buf)
+                        if (n == -1) break
+                        sink.write(buf, 0, n)
+                        read += n
+                        onProgress(Progress.Bytes(read, total))
+                    }
                 }
             }
-        }
 
-        if (expectedSha != null) {
-            val actual = sha256(dest)
-            if (!actual.equals(expectedSha, ignoreCase = true)) {
-                dest.delete()
-                onProgress(Progress.Failed("checksum mismatch"))
-                throw IOException("SHA256 mismatch for ${dest.name}: expected $expectedSha got $actual")
+            if (expectedSha != null) {
+                val actual = sha256(dest)
+                if (!actual.equals(expectedSha, ignoreCase = true)) {
+                    throw IOException("SHA256 mismatch for ${dest.name}: expected $expectedSha got $actual")
+                }
             }
+        } catch (e: IOException) {
+            runCatching { if (dest.exists()) dest.delete() }
+            onProgress(Progress.Failed(e.message ?: "download failed"))
+            throw e
         }
 
         onProgress(Progress.Done)
