@@ -64,6 +64,13 @@ android {
     }
 
     packaging {
+        jniLibs {
+            // proot + its loader ship as native libs (jniLibs/<abi>/libproot*.so) so Android places
+            // them in nativeLibraryDir — the only app-owned location that permits executing /
+            // PROT_EXEC-mmapping binaries on API 29+ (filesDir exec is SELinux-denied). Legacy
+            // packaging extracts them as real, executable files (== android:extractNativeLibs=true).
+            useLegacyPackaging = true
+        }
         resources {
             excludes += setOf(
                 "/META-INF/{AL2.0,LGPL2.1}",

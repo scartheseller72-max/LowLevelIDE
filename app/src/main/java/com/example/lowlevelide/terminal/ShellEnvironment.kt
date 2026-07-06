@@ -3,6 +3,7 @@ package com.example.lowlevelide.terminal
 import android.content.Context
 import android.os.Build
 import com.example.lowlevelide.bootstrap.BootstrapInstaller
+import com.example.lowlevelide.bootstrap.PRootInstaller
 import java.io.File
 
 /**
@@ -35,6 +36,13 @@ object ShellEnvironment {
         map["ABI"] = Build.SUPPORTED_ABIS.firstOrNull() ?: "unknown"
         map["BOOTSTRAP"] = bootstrap.absolutePath
         map["PS1"] = "lowlevel:\\w\\$ "
+
+        // PRoot finds its loader through PROOT_LOADER. The loader ships as a native lib in
+        // nativeLibraryDir (the exec-allowed location on API 29+); point PRoot at it when present.
+        // Harmless for the non-PRoot shell modes, which simply ignore the variable.
+        val prootLoader = PRootInstaller(context).loader()
+        if (prootLoader.exists()) map["PROOT_LOADER"] = prootLoader.absolutePath
+
         map.putAll(extra)
         return map.entries.map { "${it.key}=${it.value}" }.toTypedArray()
     }

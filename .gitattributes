@@ -14,3 +14,6 @@ gradlew text eol=lf
 docs/** linguist-documentation
 art/** linguist-documentation
 gradle/wrapper/gradle-wrapper.jar linguist-vendored
+
+# Native libraries (proot + loader) — never apply text/eol conversion
+*.so binary
