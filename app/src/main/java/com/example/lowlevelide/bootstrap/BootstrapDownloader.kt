@@ -55,8 +55,14 @@ class BootstrapDownloader(
         val url = "$BASE_URL/v$ALPINE_VER_MAJOR/releases/$arch/" +
             "alpine-minirootfs-${ALPINE_VERSION}-${arch}.tar.gz"
         val out = File(context.cacheDir, assetName)
-        downloader.download(url = url, dest = out, expectedSha = null, onProgress = onProgress)
-        return Source(url, null, assetName, out)
+        val pinned = PINNED_SHA256[arch].orEmpty()
+        if (pinned.isBlank()) {
+            // TLS still protects the transport, but without a compile-time pin the app is trusting
+            // whatever the mirror/CDN serves. Pin the digest (see PINNED_SHA256) to close that gap.
+            Logger.w(TAG, "No pinned SHA-256 for Alpine $ALPINE_VERSION/$arch; integrity relies on TLS only")
+        }
+        downloader.download(url = url, dest = out, expectedSha = pinned.ifBlank { null }, onProgress = onProgress)
+        return Source(url, pinned.ifBlank { null }, assetName, out)
     }
 
     companion object {
@@ -66,5 +72,22 @@ class BootstrapDownloader(
         const val ALPINE_VERSION = "3.20.3"
         private const val ALPINE_VER_MAJOR = "3.20"
         private const val BASE_URL = "https://dl-cdn.alpinelinux.org/alpine"
+
+        /**
+         * SHA-256 of each Alpine minirootfs tarball, pinned at build time. This is the real
+         * integrity anchor: it ties the download to a value baked into the (developer-signed) APK,
+         * so a compromised mirror/CDN or a TLS bypass cannot swap in a different rootfs. A checksum
+         * fetched from the same server at runtime would NOT help — an attacker who can serve a bad
+         * tarball can serve a matching bad checksum; the value must come from the signed binary.
+         *
+         * Refresh whenever [ALPINE_VERSION] changes. Obtain each digest out of band from Alpine's
+         * published sidecar, e.g.:
+         *   curl -fsSL $BASE_URL/v3.20/releases/aarch64/alpine-minirootfs-3.20.3-aarch64.tar.gz.sha256
+         * Blank = not pinned (integrity then relies on TLS only, and the installer logs a warning).
+         */
+        private val PINNED_SHA256 = mapOf(
+            "aarch64" to "", // TODO(security): sha256 of alpine-minirootfs-3.20.3-aarch64.tar.gz
+            "armv7" to ""    // TODO(security): sha256 of alpine-minirootfs-3.20.3-armv7.tar.gz
+        )
     }
 }

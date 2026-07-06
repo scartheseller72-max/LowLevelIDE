@@ -55,10 +55,29 @@ class PRootInstaller(
             DeviceInfo.Abi.ARMV7 -> "https://proot.gitlab.io/proot/bin/proot-armv7l"
             else -> throw IOException("Unsupported")
         }
-        downloader.download(url, out, expectedSha = null, onProgress = onProgress)
+        // A custom overrideUrl is developer-supplied, so only enforce the pin for the default URLs.
+        val pinned = if (overrideUrl == null) PINNED_SHA256[abi].orEmpty() else ""
+        if (pinned.isBlank()) {
+            Logger.w(TAG, "No pinned SHA-256 for $assetName; integrity relies on TLS only")
+        }
+        downloader.download(url, out, expectedSha = pinned.ifBlank { null }, onProgress = onProgress)
         out.setExecutable(true, false)
         Logger.i(TAG, "PRoot installed at ${out.absolutePath}")
     }
 
-    companion object { private const val TAG = "PRootInstaller" }
+    companion object {
+        private const val TAG = "PRootInstaller"
+
+        /**
+         * SHA-256 of each prebuilt PRoot binary, pinned at build time. PRoot is native code that
+         * runs in-process, and proot.gitlab.io publishes no checksum/signature, so this pin (or,
+         * better, shipping the binary as a signed APK asset under assets/bootstrap/) is the only
+         * real defence against a tampered upstream. Fill in the digest of the exact binary the app
+         * is tested against; blank = not pinned (integrity relies on TLS only + a logged warning).
+         */
+        private val PINNED_SHA256 = mapOf(
+            DeviceInfo.Abi.ARM64 to "", // TODO(security): sha256 of proot-aarch64
+            DeviceInfo.Abi.ARMV7 to ""  // TODO(security): sha256 of proot-armv7l
+        )
+    }
 }

@@ -1,6 +1,8 @@
 package com.example.lowlevelide.bootstrap
 
 import android.content.Context
+import android.system.Os
+import android.system.OsConstants
 import com.example.lowlevelide.util.Logger
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
@@ -25,6 +27,9 @@ object BootstrapInstaller {
 
     private const val TAG = "BootstrapInstaller"
     const val MARKER_FILE = ".installed"
+
+    /** Hard cap on total extracted bytes — defends against a decompression bomb (network case). */
+    private const val MAX_EXTRACT_BYTES = 512L * 1024 * 1024
 
     fun bootstrapDir(context: Context): File = File(context.filesDir, "bootstrap")
     fun homeDir(context: Context): File = File(context.filesDir, "home")
@@ -73,26 +78,38 @@ object BootstrapInstaller {
     @Throws(IOException::class)
     private fun extractTarGz(input: InputStream, dest: File) {
         val destCanonical = dest.canonicalFile
+        var extractedBytes = 0L
         GZIPInputStream(input).use { gzip ->
             TarArchiveInputStream(gzip).use { tar ->
                 var entry: TarArchiveEntry? = tar.nextTarEntry
                 while (entry != null) {
                     val outFile = File(dest, entry.name)
+                    // Reject any entry whose *location* resolves outside dest. canonicalFile
+                    // follows symlinks, so once an escaping link exists on disk this also catches
+                    // a later write routed through it (e.g. link -> /elsewhere, then link/file).
                     if (!isInside(destCanonical, outFile)) {
                         throw IOException("Tar entry escapes destination: ${entry.name}")
                     }
 
                     when {
                         entry.isDirectory -> outFile.mkdirs()
-                        entry.isSymbolicLink -> writeSymlink(entry.linkName.orEmpty(), outFile, destCanonical)
+                        // Links are preserved verbatim (see writeLink): their targets are resolved
+                        // inside the PRoot guest, not against the host filesystem.
+                        entry.isSymbolicLink -> writeLink(entry.linkName.orEmpty(), outFile)
+                        entry.isLink -> writeLink(toGuestAbsolute(entry.linkName.orEmpty()), outFile)
                         else -> {
                             outFile.parentFile?.mkdirs()
                             // Re-validate after parent dirs exist: a previously-extracted symlink
-                            // could otherwise redirect this write outside `dest`.
+                            // must not redirect this write outside `dest`.
                             if (!isInside(destCanonical, outFile)) {
                                 throw IOException("Tar entry resolves outside destination: ${entry.name}")
                             }
-                            FileOutputStream(outFile).use { tar.copyTo(it) }
+                            extractedBytes += FileOutputStream(outFile).use { tar.copyTo(it) }
+                            if (extractedBytes > MAX_EXTRACT_BYTES) {
+                                throw IOException(
+                                    "Bootstrap archive exceeds ${MAX_EXTRACT_BYTES / (1024 * 1024)} MiB; aborting"
+                                )
+                            }
                             applyMode(outFile, entry.mode)
                         }
                     }
@@ -110,27 +127,40 @@ object BootstrapInstaller {
     }
 
     /**
-     * Best-effort symlink. The link **target** is attacker-controlled (the rootfs is fetched
-     * over the network), so we only create a real symlink when the resolved target stays inside
-     * [dest]; otherwise we fall back to writing the target string as a plain file, which can't
-     * redirect later writes out of the sandbox.
+     * Recreate a tar link (symbolic or hard) **verbatim**.
+     *
+     * The rootfs is consumed through PRoot, which resolves a link target inside the guest root at
+     * runtime — e.g. an Alpine busybox applet `bin/ls -> /bin/busybox` must keep the absolute
+     * target `/bin/busybox` so PRoot maps it to `<root>/bin/busybox`. Rewriting or refusing such
+     * targets because `/bin/busybox` is not a real *host* path would turn the entire busybox
+     * userland into inert text files. Extraction-time escape safety does NOT rely on refusing
+     * links: every regular-file write is re-canonicalised and rejected if it resolves outside
+     * `dest` (see extractTarGz), so a hostile `link -> /elsewhere` followed by a write through it
+     * is caught there and by the per-entry location check.
+     *
+     * Uses [Os.symlink] (one syscall) instead of spawning `/system/bin/ln` per entry — a real
+     * Alpine rootfs has hundreds of busybox symlinks, so this is also a large extraction speedup.
      */
-    private fun writeSymlink(target: String, outFile: File, dest: File) {
-        outFile.parentFile?.mkdirs()
-        val resolvedTarget = if (target.startsWith("/")) File(target) else File(outFile.parentFile, target)
-        val safeTarget = runCatching { isInside(dest, resolvedTarget) }.getOrDefault(false)
-        if (!safeTarget) {
-            // Don't materialize an escaping link; record the intended target inertly.
-            outFile.writeText(target)
-            return
+    private fun writeLink(target: String, linkFile: File) {
+        linkFile.parentFile?.mkdirs()
+        runCatching { if (linkFile.exists() || isSymlink(linkFile)) linkFile.delete() }
+        val created = runCatching { Os.symlink(target, linkFile.absolutePath); true }.getOrDefault(false)
+        if (!created) {
+            val viaLn = runCatching {
+                Runtime.getRuntime()
+                    .exec(arrayOf("/system/bin/ln", "-sf", target, linkFile.absolutePath))
+                    .waitFor() == 0
+            }.getOrDefault(false)
+            // Last resort: record the target inertly rather than silently dropping the entry.
+            if (!viaLn) linkFile.writeText(target)
         }
-        val tryRealLink = runCatching {
-            Runtime.getRuntime().exec(
-                arrayOf("/system/bin/ln", "-sf", target, outFile.absolutePath)
-            ).waitFor() == 0
-        }.getOrDefault(false)
-        if (!tryRealLink) outFile.writeText(target)
     }
+
+    private fun isSymlink(file: File): Boolean =
+        runCatching { OsConstants.S_ISLNK(Os.lstat(file.absolutePath).st_mode) }.getOrDefault(false)
+
+    /** Tar hard-link targets are archive-root-relative; express them as guest-absolute paths. */
+    private fun toGuestAbsolute(name: String): String = if (name.startsWith("/")) name else "/$name"
 
     private fun applyMode(file: File, mode: Int) {
         // POSIX owner mode bits → Java's coarse setReadable/Writable/Executable.

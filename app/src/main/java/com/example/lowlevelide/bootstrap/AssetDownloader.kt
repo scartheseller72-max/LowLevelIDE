@@ -40,6 +40,14 @@ class AssetDownloader(
         onProgress(Progress.Start)
         dest.parentFile?.mkdirs()
 
+        // Only ever fetch over TLS. The bundled-asset paths bypass download() entirely, so every
+        // URL that reaches here should already be https; enforce it so a mis-set overrideUrl (or a
+        // future dynamic URL) can't silently fetch executable content over plaintext.
+        if (!url.startsWith("https://", ignoreCase = true)) {
+            onProgress(Progress.Failed("insecure URL"))
+            throw IOException("Refusing non-HTTPS asset URL: $url")
+        }
+
         // Any failure (HTTP error, mid-stream network drop, checksum mismatch) must leave no
         // partial file behind: callers use File.exists() to decide whether an asset is already
         // installed, so a truncated download would otherwise masquerade as a valid one and
@@ -103,6 +111,9 @@ class AssetDownloader(
             .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
             .followRedirects(true)
+            // Follow same-protocol redirects, but never HTTPS -> HTTP: a hostile redirect must
+            // not be able to downgrade a security-sensitive download to plaintext.
+            .followSslRedirects(false)
             .build()
     }
 }

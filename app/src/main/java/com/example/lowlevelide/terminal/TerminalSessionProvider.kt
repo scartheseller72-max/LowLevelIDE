@@ -64,8 +64,13 @@ class TerminalSessionProvider(private val context: Context) {
         return when {
             rooted -> {
                 val su = RootDetect.suBinary() ?: "/system/bin/sh"
-                val script = if (initialCommand != null) "$targetShell -c \"$initialCommand\""
-                else targetShell
+                // `su -c` takes a single shell string, so quote both the shell path and the
+                // (currently always-null) initial command. Without this, any future caller that
+                // wires user- or file-derived text into initialCommand could inject commands via
+                // embedded quotes / $(...) / backticks into the elevated shell.
+                val script = if (initialCommand != null)
+                    "${shQuote(targetShell)} -c ${shQuote(initialCommand)}"
+                else shQuote(targetShell)
                 Triple("root", su, arrayOf("-c", script))
             }
             prootAvailable -> {
@@ -95,6 +100,9 @@ class TerminalSessionProvider(private val context: Context) {
             }
         }
     }
+
+    /** Single-quote a value for safe interpolation into a `sh -c` string. */
+    private fun shQuote(s: String): String = "'" + s.replace("'", "'\\''") + "'"
 
     companion object { private const val TAG = "TerminalSessionProvider" }
 }
