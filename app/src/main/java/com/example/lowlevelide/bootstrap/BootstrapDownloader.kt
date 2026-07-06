@@ -86,8 +86,10 @@ class BootstrapDownloader(
          * Blank = not pinned (integrity then relies on TLS only, and the installer logs a warning).
          */
         private val PINNED_SHA256 = mapOf(
-            "aarch64" to "", // TODO(security): sha256 of alpine-minirootfs-3.20.3-aarch64.tar.gz
-            "armv7" to ""    // TODO(security): sha256 of alpine-minirootfs-3.20.3-armv7.tar.gz
+            // Verified 2026-07-06 against Alpine's published .tar.gz.sha256 sidecars AND by
+            // recomputing the digest of the downloaded artifact. Refresh when ALPINE_VERSION bumps.
+            "aarch64" to "041fa34a81788242df9e78fa69b97ab45b8ec47ddbf88864755610414a7bf3de",
+            "armv7" to "ea8823fb4c4cf5f71f1d180e47904fb36ae74d3ded06c980230116b129fc5f07"
         )
     }
 }

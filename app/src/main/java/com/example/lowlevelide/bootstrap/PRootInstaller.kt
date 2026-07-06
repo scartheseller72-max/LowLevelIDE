@@ -69,15 +69,24 @@ class PRootInstaller(
         private const val TAG = "PRootInstaller"
 
         /**
-         * SHA-256 of each prebuilt PRoot binary, pinned at build time. PRoot is native code that
-         * runs in-process, and proot.gitlab.io publishes no checksum/signature, so this pin (or,
-         * better, shipping the binary as a signed APK asset under assets/bootstrap/) is the only
-         * real defence against a tampered upstream. Fill in the digest of the exact binary the app
-         * is tested against; blank = not pinned (integrity relies on TLS only + a logged warning).
+         * SHA-256 of each prebuilt PRoot binary, pinned at build time.
+         *
+         * NOTE (verified 2026-07-06): the default download URLs below —
+         *   https://proot.gitlab.io/proot/bin/proot-aarch64  and  .../proot-armv7l
+         * currently return HTTP 404. That host only serves a single x86-64 desktop `proot`
+         * (e_machine 0x3e), not Android ARM builds, so the network path does not work on real
+         * devices as-is. Ship a known-good Android proot binary as a signed APK asset
+         * (assets/bootstrap/proot-arm64, assets/bootstrap/proot-armv7 — install()'s bundled-asset
+         * branch already prefers these), or point overrideUrl at a versioned, pinnable artifact.
+         * Bundling is both the fix for the dead URLs and the strongest integrity guarantee, since
+         * the bytes are then covered by the APK signature.
+         *
+         * To pin a binary once you have it:  sha256sum proot-arm64  → paste the lowercase hex
+         * below. Blank = not pinned (integrity relies on TLS only, and install() logs a warning).
          */
         private val PINNED_SHA256 = mapOf(
-            DeviceInfo.Abi.ARM64 to "", // TODO(security): sha256 of proot-aarch64
-            DeviceInfo.Abi.ARMV7 to ""  // TODO(security): sha256 of proot-armv7l
+            DeviceInfo.Abi.ARM64 to "", // TODO(security): sha256 of the shipped arm64 proot binary
+            DeviceInfo.Abi.ARMV7 to ""  // TODO(security): sha256 of the shipped armv7 proot binary
         )
     }
 }
